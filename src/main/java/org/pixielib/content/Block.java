@@ -26,4 +26,10 @@ public class Block {
     public void flip() {
         buffer.flip();
     }
+
+    public void get(int offset, byte[] bytes) {
+        buffer.position(offset);
+        buffer.get(bytes);
+        buffer.rewind();
+    }
 }

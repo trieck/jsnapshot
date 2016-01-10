@@ -12,19 +12,24 @@ public class EventStore {
     private static final int DEFAULT_ENTRIES = 10000;
 
     private BlockIO io;
-    private long tablesize;
-    private long nbpages;
+    private int tablesize;
+    private int pages;
     private BucketPage page;
     private RandomPerm perm;
+    private Repository repo;
+    private int fillcount;
 
     public EventStore() {
         io = new BlockIO();
         page = new BucketPage();
         perm = new RandomPerm();
+        repo = new Repository();
+        fillcount = 0;
     }
 
     public void close() throws IOException {
         io.close();
+        repo.close();
     }
 
     public void open() throws IOException {
@@ -32,6 +37,7 @@ public class EventStore {
         File file = File.createTempFile("store-", ".idx");
         file.deleteOnExit();
         mktable(file);
+        repo.open();
     }
 
     public void open(String filename) throws IOException {
@@ -40,11 +46,11 @@ public class EventStore {
     }
 
     private void mktable(File file) throws IOException {
-        tablesize = Primes.prime(DEFAULT_ENTRIES);
-        perm.generate((int) tablesize);
-        nbpages = (tablesize / BucketPage.BUCKETS_PER_PAGE) + 1;
+        tablesize = (int) Primes.prime(DEFAULT_ENTRIES);
+        perm.generate(tablesize);
+        pages = (tablesize / BucketPage.BUCKETS_PER_PAGE) + 1;
         io.open(file, "rw");
-        writeBlock(nbpages - 1);
+        writeBlock(pages - 1);
     }
 
     private void writeBlock(long blockno) throws IOException {
@@ -64,24 +70,39 @@ public class EventStore {
             return false;
 
         setKey(slot.bucket, key);
-        setFilled(slot.bucket);
 
+        long offset = repo.writeEvent(event);
+
+        page.setFilled(slot.bucket);
+        page.setDatumOffset(slot.bucket, offset);
+
+        fillcount++;
         writeBlock(slot.pageno);
+
+        if (isfull()) {
+            resize();
+        }
 
         return true;
     }
 
-    private void setFilled(int bucket) {
-        page.setFilled(bucket);
+    private void resize() {
+    }
+
+    private boolean isfull() {
+        return false;
+    }
+
+    private byte[] sha1(String s) {
+        return DigestUtils.sha1(s);
     }
 
     private void setKey(int bucket, String key) {
-        byte[] bytes = DigestUtils.sha1(key);
-        page.setKey(bucket, bytes);
+        page.setDigest(bucket, sha1(key));
     }
 
     private boolean findSlot(String key, Slot slot) throws IOException {
-        return findSlot(DigestUtils.sha1(key), slot);
+        return findSlot(sha1(key), slot);
     }
 
     private boolean findSlot(byte[] digest, Slot slot) throws IOException {
@@ -91,12 +112,12 @@ public class EventStore {
 
         readBlock(slot.pageno);
 
-        if (!page.isFilled(slot.bucket))
+        if (page.isEmpty(slot.bucket))
             return true;
 
         final byte[] bdigest = new byte[BucketPage.SHA1_DIGEST_BYTES];
         for (int i = 0; i < tablesize; ++i) {
-            if (!page.isFilled(slot.bucket))
+            if (page.isEmpty(slot.bucket))
                 return true;
 
             page.getDigest(slot.bucket, bdigest);
@@ -107,6 +128,10 @@ public class EventStore {
         }
 
         return false;
+    }
+
+    private long hash(String key) {
+        return hash(sha1(key));
     }
 
     private long hash(byte[] digest) {
@@ -130,5 +155,71 @@ public class EventStore {
 
     private boolean isEqualDigest(byte[] a, byte[] b) {
         return Arrays.equals(a, b);
+    }
+
+    public boolean find(Event event) throws IOException {
+        return find(event.getObjectId());
+    }
+
+    public boolean find(String key) throws IOException {
+
+        Slot slot = new Slot();
+        if (!getBucket(key, slot))
+            return false;
+
+        return !page.isDeleted(slot.bucket);
+    }
+
+    public boolean find(String key, Event event) throws IOException {
+        EventBuffer buffer = new EventBuffer();
+
+        if (!find(key, buffer))
+            return false;
+
+        return false;
+    }
+
+    public boolean find(String key, EventBuffer buffer) throws IOException {
+
+        Slot slot = new Slot();
+        if (!getBucket(key, slot))
+            return false;
+
+        if (page.isDeleted(slot.bucket))
+            return false;
+
+        long offset = page.getDatumOffset(slot.bucket);
+
+        //repo_.readVal(offset, event);
+
+        return false;
+    }
+
+    private boolean getBucket(String key, Slot slot) throws IOException {
+        long h = hash(key);
+        slot.pageno = h / BucketPage.BUCKETS_PER_PAGE;
+        slot.bucket = (int) (h % BucketPage.BUCKETS_PER_PAGE);
+
+        readBlock(slot.pageno);
+        if (page.isEmpty(slot.bucket))
+            return false;   // no hit
+
+        final byte[] bdigest = new byte[BucketPage.SHA1_DIGEST_BYTES];
+        final byte[] kdigest = sha1(key);
+        for (int i = 0; i < tablesize; ++i) {
+            if (page.isEmpty(slot.bucket))
+                return false;   // no hit
+
+            page.getDigest(slot.bucket, bdigest);
+            if (isEqualDigest(bdigest, kdigest))
+                return true;    // hit
+
+            nextBucket(i, slot);
+        }
+
+        return false;
+    }
+
+    public void update(Event event) {
     }
 }

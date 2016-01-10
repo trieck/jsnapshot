@@ -36,6 +36,7 @@ public class BlockIO {
 
         seekBlock(blockno);
 
+        block.rewind();
         if ((file.getChannel().read(block.getBuffer())) != Block.BLOCK_SIZE)
             throw new IOException("unable to read block.");
 
@@ -48,6 +49,7 @@ public class BlockIO {
 
     public void writeBlock(long blockno, Block block) throws IOException {
         seekBlock(blockno);
+        block.rewind();
 
         if ((file.getChannel().write(block.getBuffer())) != Block.BLOCK_SIZE)
             throw new IOException("unable to write block.");

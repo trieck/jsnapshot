@@ -2,14 +2,11 @@ package org.pixielib.content;
 
 import org.pixielib.util.Timer;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 
 public class Snapshotter {
 
     public Snapshotter() {
-
     }
 
     public static void main(String[] args) {
@@ -27,21 +24,20 @@ public class Snapshotter {
             System.out.printf("    elapsed time %s\n", timer);
 
         } catch (Exception e) {
-            System.err.println(e.toString());
+            e.printStackTrace();
             System.exit(1);
         }
     }
 
     public void snapshot(String infile, String outfile) throws IOException {
+        SnapshotTree tree = null;
 
-        EventStore store = new EventStore();
-        store.open();
-
-        BufferedReader reader = new BufferedReader(new FileReader(infile));
-
-        String line;
-        while ((line = reader.readLine()) != null) {
-            store.insert(new Event(line));
+        try {
+            tree = new SnapshotTree();
+            tree.snapshot(infile);
+        } finally {
+            if (tree != null)
+                tree.close();
         }
     }
 }
