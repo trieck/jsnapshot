@@ -133,6 +133,22 @@ public class Event {
         return false;
     }
 
+    public boolean removeChild(String objectId) {
+        if (!hasChild(objectId))
+            return false;
+
+        ArrayNode children = (ArrayNode) node.get(TREE_CHILDREN);
+        for (int i = 0; i < children.size(); ++i) {
+            JsonNode child = children.get(i);
+            if (child.getTextValue().equals(objectId)) {
+                children.remove(i);
+                break;
+            }
+        }
+        
+        return true;
+    }
+
     public String getString(String fieldname) {
         JsonNode n = node.get(fieldname);
         if (n == null)

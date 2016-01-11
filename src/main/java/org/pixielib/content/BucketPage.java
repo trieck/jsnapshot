@@ -37,6 +37,13 @@ public class BucketPage extends Block {
         buffer.putInt(offset, flags | BF_FILLED);
     }
 
+    public void setDeleted(int bucket) {
+        ByteBuffer buffer = getBuffer();
+        int offset = bucket * BUCKET_SIZE;
+        int flags = buffer.getInt(offset);
+        buffer.putInt(offset, flags | BF_DELETED);
+    }
+
     public void setDatumOffset(int bucket, long doffset) {
         ByteBuffer buffer = getBuffer();
         int offset = bucket * BUCKET_SIZE + DATUM_OFFSET;

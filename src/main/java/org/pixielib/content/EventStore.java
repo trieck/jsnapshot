@@ -222,6 +222,31 @@ public class EventStore {
         return false;
     }
 
-    public void update(Event event) {
+    public boolean update(Event event) throws IOException {
+        String key = event.getObjectId();
+
+        Slot slot = new Slot();
+        if (!getBucket(key, slot))
+            return false;
+
+        long offset = page.getDatumOffset(slot.bucket);
+
+        repo.updateEvent(event, offset);
+
+        return true;
+    }
+
+    public boolean destroy(Event event) throws IOException {
+        String key = event.getObjectId();
+
+        Slot slot = new Slot();
+        if (!getBucket(key, slot))
+            return false;
+
+        page.setDeleted(slot.bucket);
+
+        io.writeBlock(slot.pageno, page);
+
+        return true;
     }
 }

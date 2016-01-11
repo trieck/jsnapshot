@@ -6,6 +6,9 @@ import java.io.IOException;
 
 public class SnapshotTree {
 
+    private static final String SNAP_EVENT =
+            "Click|DoubleClick|GotFocus|LostFocus|SelectedIndexChanged|UserModified|CellValueChanged";
+
     private EventStore store;
 
     public SnapshotTree() throws IOException {
@@ -30,6 +33,35 @@ public class SnapshotTree {
         String name = event.get("EVENT_NAME").getTextValue();
         if (name.matches("Created")) {
             insert(event);
+        } else if (name.matches("Destroyed")) {
+            destroy(event);
+        } else if (name.matches("Reparented")) {
+            reparent(event);
+        } else if (name.matches(SNAP_EVENT)) {
+            snapshot(event);
+        } else {
+            update(event);
+        }
+    }
+
+    private void snapshot(Event event) throws IOException {
+        update(event);
+    }
+
+    private void reparent(Event event) {
+
+    }
+
+    private void destroy(Event event) throws IOException {
+        store.destroy(event);
+        parentRemove(event.getParentId(), event.getObjectId());
+    }
+
+    private void parentRemove(String parentId, String objectId) throws IOException {
+        Event p = new Event();
+        if (store.find(parentId, p)) {
+            if (p.removeChild(objectId))
+                store.update(p);
         }
     }
 
@@ -38,6 +70,15 @@ public class SnapshotTree {
             store.update(event);
         } else {
             insert(event, getParentId(event));
+        }
+    }
+
+    private void update(Event event) throws IOException {
+        Event u = new Event();
+        if (store.find(event.getObjectId(), u)) {
+            store.update(u);
+        } else {
+            store.insert(event);
         }
     }
 

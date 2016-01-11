@@ -79,7 +79,7 @@ public class Repository {
 
             int nlength = Math.min(length, DatumPage.DATUM_AVAIL);
 
-            page.writeBytes(ddatum, bytes, j, nlength);
+            page.writeBytes(ddatum, bytes, j + start, nlength);
             page.setLength(ddatum, nlength);
             page.setTotalLength(ddatum, bytes.length);
 
@@ -123,5 +123,19 @@ public class Repository {
             io.writeBlock(dpageno, page);
             newpage();
         }
+    }
+
+    public void updateEvent(Event event, long offset) {
+        EventBuffer buffer = EventBuffer.makeBuffer(event);
+        updateBuffer(buffer.getBuffer(), offset);
+    }
+
+    private void updateBuffer(ByteBuffer buffer, long offset) {
+        updateBuffer(buffer.array(), offset);
+    }
+
+    @SuppressWarnings("unused")
+    private void updateBuffer(byte[] bytes, long offset) {
+
     }
 }
