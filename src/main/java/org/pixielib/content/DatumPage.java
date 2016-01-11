@@ -46,6 +46,14 @@ public class DatumPage extends Block {
         buffer.put(bytes, start, length);
     }
 
+    public void fill(byte datum, byte b, int length) {
+        ByteBuffer buffer = getBuffer();
+        while (length > 0) {
+            buffer.put(b);
+            length--;
+        }
+    }
+
     public int getTotalLength(byte datum) {
         ByteBuffer buffer = getBuffer();
         int offset = datum * DATUM_SIZE + TOTAL_LENGTH_OFFSET;

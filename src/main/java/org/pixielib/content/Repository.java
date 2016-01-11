@@ -125,17 +125,60 @@ public class Repository {
         }
     }
 
-    public void updateEvent(Event event, long offset) {
+    public void updateEvent(Event event, long offset) throws IOException {
         EventBuffer buffer = EventBuffer.makeBuffer(event);
         updateBuffer(buffer.getBuffer(), offset);
     }
 
-    private void updateBuffer(ByteBuffer buffer, long offset) {
-        updateBuffer(buffer.array(), offset);
+    private void updateBuffer(ByteBuffer buffer, long offset) throws IOException {
+        updateBytes(buffer.array(), offset);
     }
 
     @SuppressWarnings("unused")
-    private void updateBuffer(byte[] bytes, long offset) {
+    private void updateBytes(byte[] bytes, long offset) throws IOException {
 
+        long pageno = offset / Block.BLOCK_SIZE;
+        long start = pageno * Block.BLOCK_SIZE;
+        byte datum = (byte) ((offset - start) / DatumPage.DATUM_SIZE);
+        int totalLength = bytes.length;
+
+        io.readBlock(pageno, page);
+
+        for (int i = 0, j = 0, length = totalLength; length > 0; ++i) {
+            if (i > 0) {
+                if ((offset = page.getNext(datum)) == 0) {
+                    page.setNext(datum, datumoffset());
+                    io.writeBlock(pageno, page);
+                    writeBytes(bytes, j, length);
+                    return;
+                } else {
+                    io.writeBlock(pageno, page);
+                    pageno = offset / Block.BLOCK_SIZE;
+                    start = pageno * Block.BLOCK_SIZE;
+                    datum = (byte) ((offset - start) / DatumPage.DATUM_SIZE);
+                    io.readBlock(pageno, page);
+                }
+            }
+
+            int nlength = Math.min(length, DatumPage.DATUM_AVAIL);
+
+            page.writeBytes(datum, bytes, j, nlength);
+            j += nlength;
+
+            int written = nlength;
+            nlength = Math.max(0, page.getLength(datum) - written);
+            if (nlength > 0) {
+                page.fill(datum, (byte) 0, nlength);  // clear leftover
+            }
+
+            page.setTotalLength(datum, totalLength);
+            page.setLength(datum, written);
+
+            if ((length -= written) == 0) { // last
+                page.setNext(datum, 0);
+            }
+        }
+
+        io.writeBlock(pageno, page);
     }
 }
