@@ -176,7 +176,9 @@ public class EventStore {
         if (!find(key, buffer))
             return false;
 
-        return false;
+        event.set(buffer);
+
+        return true;
     }
 
     public boolean find(String key, EventBuffer buffer) throws IOException {
@@ -190,9 +192,9 @@ public class EventStore {
 
         long offset = page.getDatumOffset(slot.bucket);
 
-        //repo_.readVal(offset, event);
+        repo.readEvent(offset, buffer);
 
-        return false;
+        return true;
     }
 
     private boolean getBucket(String key, Slot slot) throws IOException {

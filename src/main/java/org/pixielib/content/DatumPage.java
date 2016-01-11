@@ -45,4 +45,34 @@ public class DatumPage extends Block {
         buffer.position(offset);
         buffer.put(bytes, start, length);
     }
+
+    public int getTotalLength(byte datum) {
+        ByteBuffer buffer = getBuffer();
+        int offset = datum * DATUM_SIZE + TOTAL_LENGTH_OFFSET;
+        return buffer.getInt(offset);
+    }
+
+    public int getLength(byte datum) {
+        ByteBuffer buffer = getBuffer();
+        int offset = datum * DATUM_SIZE + LENGTH_OFFSET;
+        return buffer.getInt(offset);
+    }
+
+    public ByteBuffer getData(byte datum) {
+        ByteBuffer buffer = getBuffer();
+        int offset = datum * DATUM_SIZE + DATA_OFFSET;
+        int length = getLength(datum);
+        buffer.position(offset);
+
+        byte[] bytes = new byte[length];
+        buffer.get(bytes);
+
+        return ByteBuffer.wrap(bytes);
+    }
+
+    public long getNext(byte datum) {
+        ByteBuffer buffer = getBuffer();
+        int offset = datum * DATUM_SIZE;
+        return buffer.getLong(offset);
+    }
 }

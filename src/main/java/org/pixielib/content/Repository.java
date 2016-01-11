@@ -16,8 +16,30 @@ public class Repository {
         dpageno = ddatum = 0;
     }
 
-    public void readEvent(long offset, EventBuffer buffer) {
+    public void readEvent(long offset, EventBuffer event) throws IOException {
+        long pageno = offset / Block.BLOCK_SIZE;
+        byte datum = (byte) ((offset - pageno * Block.BLOCK_SIZE) / DatumPage.DATUM_SIZE);
 
+        io.readBlock(pageno, page);
+
+        int totalLength = page.getTotalLength(datum);
+        ByteBuffer buffer = ByteBuffer.allocateDirect(totalLength);
+
+        for (; ; ) {
+            ByteBuffer data = page.getData(datum);
+            buffer.put(data);
+
+            if ((offset = page.getNext(datum)) == 0)
+                break;
+
+            pageno = offset / Block.BLOCK_SIZE;
+            datum = (byte) ((offset - pageno * Block.BLOCK_SIZE) / DatumPage.DATUM_SIZE);
+            io.readBlock(pageno, page);
+        }
+
+        buffer.rewind();
+
+        event.set(buffer);
     }
 
     public void close() throws IOException {

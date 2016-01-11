@@ -12,15 +12,22 @@ public class EventBuffer {
     private FlatBufferBuilder builder = new FlatBufferBuilder();
 
     public EventBuffer() {
-
     }
 
     private EventBuffer(Event event) {
         construct(event);
     }
 
+    private EventBuffer(ByteBuffer buffer) {
+        set(buffer);
+    }
+
     public static EventBuffer makeBuffer(Event event) {
         return new EventBuffer(event);
+    }
+
+    public static EventBuffer makeBuffer(ByteBuffer buffer) {
+        return new EventBuffer(buffer);
     }
 
     public ByteBuffer getBuffer() {
@@ -73,5 +80,13 @@ public class EventBuffer {
                 timeStamp, timeZone, userid, childrenvector, metavector);
 
         FBEvent.finishFBEventBuffer(builder, root);
+    }
+
+    FBEvent getEvent() {
+        return FBEvent.getRootAsFBEvent(builder.dataBuffer());
+    }
+
+    public void set(ByteBuffer buffer) {
+        builder.init(buffer);
     }
 }

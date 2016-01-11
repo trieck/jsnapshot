@@ -24,8 +24,8 @@ public class Event {
 
     public Event() {
         node = mapper.createObjectNode();
-        node.put(METADATA, mapper.createArrayNode());
         metadata = new HashMap<String, String>();
+        clear();
     }
 
     public Event(String rep) throws IOException {
@@ -159,6 +159,44 @@ public class Event {
 
     public boolean hasChildren() {
         return getChildren() != null;
+    }
+
+    public void set(EventBuffer buffer) {
+
+        clear();
+
+        FBEvent event = buffer.getEvent();
+
+        node.put("EVENT_NAME", event.name());
+        node.put("EVENT_SEQUENCE_NUMBER", event.sequence());
+        node.put("EVENT_SOURCE", event.source());
+        node.put("OPERATION_ID", event.operationId());
+        node.put("PROCESS_ID", event.processId());
+        node.put("SESSION_ID", event.sessionId());
+        node.put("TIME_STAMP", event.timeStamp());
+        node.put("TIME_ZONE_NAME", event.timeZoneName());
+        node.put("USER_ID", event.userId());
+
+        int length = event.treeChildrenLength();
+        for (int i = 0; i < length; ++i) {
+            addChild(event.treeChildren(i));
+        }
+
+        if (event.initialSequence() > 0) {
+            node.put("InitialSequenceNumber", event.initialSequence());
+        }
+
+        length = event.metadataLength();
+        for (int i = 0; i < length; ++i) {
+            FBMeta meta = event.metadata(i);
+            putMeta(meta.name(), meta.value());
+        }
+    }
+
+    private void clear() {
+        node.removeAll();
+        node.put(METADATA, mapper.createArrayNode());
+        metadata.clear();
     }
 }
 
