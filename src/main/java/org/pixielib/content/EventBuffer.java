@@ -1,6 +1,7 @@
 package org.pixielib.content;
 
 import com.google.flatbuffers.FlatBufferBuilder;
+import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.ObjectNode;
@@ -18,16 +19,8 @@ public class EventBuffer {
         construct(event);
     }
 
-    private EventBuffer(ByteBuffer buffer) {
-        set(buffer);
-    }
-
     public static EventBuffer makeBuffer(Event event) {
         return new EventBuffer(event);
-    }
-
-    public static EventBuffer makeBuffer(ByteBuffer buffer) {
-        return new EventBuffer(buffer);
     }
 
     public ByteBuffer getBuffer() {
@@ -88,5 +81,20 @@ public class EventBuffer {
 
     public void set(ByteBuffer buffer) {
         builder.init(buffer);
+    }
+
+    public String getMeta(String name) {
+
+        FBEvent event = getEvent();
+
+        int length = event.metadataLength();
+
+        for (int i = 0; i < length; ++i) {
+            FBMeta meta = event.metadata(i);
+            if (StringUtils.equals(meta.name(), name))
+                return meta.value();
+        }
+
+        return "";
     }
 }

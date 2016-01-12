@@ -13,7 +13,6 @@ public class EventStore {
 
     private BlockIO io;
     private int tablesize;
-    private int pages;
     private BucketPage page;
     private RandomPerm perm;
     private Repository repo;
@@ -40,15 +39,10 @@ public class EventStore {
         repo.open();
     }
 
-    public void open(String filename) throws IOException {
-        close();
-        mktable(new File(filename));
-    }
-
     private void mktable(File file) throws IOException {
         tablesize = (int) Primes.prime(DEFAULT_ENTRIES);
         perm.generate(tablesize);
-        pages = (tablesize / BucketPage.BUCKETS_PER_PAGE) + 1;
+        int pages = (tablesize / BucketPage.BUCKETS_PER_PAGE) + 1;
         io.open(file, "rw");
         writeBlock(pages - 1);
     }
@@ -164,10 +158,7 @@ public class EventStore {
     public boolean find(String key) throws IOException {
 
         Slot slot = new Slot();
-        if (!getBucket(key, slot))
-            return false;
-
-        return !page.isDeleted(slot.bucket);
+        return getBucket(key, slot) && !page.isDeleted(slot.bucket);
     }
 
     public boolean find(String key, Event event) throws IOException {

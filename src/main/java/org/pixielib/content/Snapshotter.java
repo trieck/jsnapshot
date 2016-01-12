@@ -34,7 +34,7 @@ public class Snapshotter {
 
         try {
             tree = new SnapshotTree();
-            tree.snapshot(infile);
+            tree.snapshot(infile, outfile);
         } finally {
             if (tree != null)
                 tree.close();

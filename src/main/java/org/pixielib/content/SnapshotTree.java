@@ -1,13 +1,24 @@
 package org.pixielib.content;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 public class SnapshotTree {
 
     private static final String SNAP_EVENT =
             "Click|DoubleClick|GotFocus|LostFocus|SelectedIndexChanged|UserModified|CellValueChanged";
+
+    private static Comparator<EventBuffer> SEQUENCE_COMPARATOR = new Comparator<EventBuffer>() {
+        @Override
+        public int compare(EventBuffer left, EventBuffer right) {
+            long leftSeq = left.getEvent().initialSequence();
+            long rightSeq = right.getEvent().initialSequence();
+            return leftSeq < rightSeq ? -1 : leftSeq > rightSeq ? 1 : 0;
+        }
+    };
 
     private EventStore store;
 
@@ -20,13 +31,20 @@ public class SnapshotTree {
         store.close();
     }
 
-    public void snapshot(String infile) throws IOException {
+    public void snapshot(String infile, String outfile) throws IOException {
         BufferedReader reader = new BufferedReader(new FileReader(infile));
+        BufferedWriter writer = new BufferedWriter(new FileWriter(outfile));
 
         String line;
         while ((line = reader.readLine()) != null) {
-            process(new Event(line));
+            Event event = new Event(line);
+            process(event);
+            writer.write(event.toString());
+            writer.newLine();
         }
+
+        reader.close();
+        writer.close();
     }
 
     private void process(Event event) throws IOException {
@@ -46,6 +64,48 @@ public class SnapshotTree {
 
     private void snapshot(Event event) throws IOException {
         update(event);
+
+        SnapshotParser parser = new SnapshotParser();
+
+        parse(parser, event);
+        parser.writePhrases(event);
+    }
+
+    private void parse(SnapshotParser parser, Event event) throws IOException {
+
+        EventBuffer root = new EventBuffer();
+        if (store.find(event.getRootId(), root)) {
+            parseNode(parser, root);
+        }
+    }
+
+    private void parseNode(SnapshotParser parser, EventBuffer node) throws IOException {
+        parser.parse(node);
+
+        List<EventBuffer> children = sortedChildren(node);
+        for (EventBuffer child : children) {
+            parseNode(parser, child);
+        }
+    }
+
+    private List<EventBuffer> sortedChildren(EventBuffer buffer) throws IOException {
+
+        List<EventBuffer> output = new ArrayList<>();
+
+        FBEvent event = buffer.getEvent();
+
+        int length = event.treeChildrenLength();
+        for (int i = 0; i < length; ++i) {
+            String objectId = event.treeChildren(i);
+            EventBuffer child = new EventBuffer();
+            if (store.find(objectId, child)) {
+                output.add(child);
+            }
+        }
+
+        Collections.sort(output, SEQUENCE_COMPARATOR);
+
+        return output;
     }
 
     private void reparent(Event event) throws IOException {

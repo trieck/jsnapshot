@@ -25,7 +25,7 @@ public class Event {
 
     public Event() {
         node = mapper.createObjectNode();
-        metadata = new HashMap<String, String>();
+        metadata = new HashMap<>();
         clear();
     }
 
@@ -36,11 +36,16 @@ public class Event {
 
     public Event(Event event) throws IOException {
         this.node = (ObjectNode) mapper.readTree(event.node.toString());
-        this.metadata = new HashMap<String, String>(event.metadata);
+        this.metadata = new HashMap<>(event.metadata);
+    }
+
+    @Override
+    public String toString() {
+        return node.toString();
     }
 
     private void parseMeta() {
-        metadata = new HashMap<String, String>();
+        metadata = new HashMap<>();
 
         ArrayNode meta = (ArrayNode) node.get(METADATA);
         for (int i = 0; i < meta.size(); ++i) {
@@ -78,7 +83,7 @@ public class Event {
         ArrayNode array = (ArrayNode) node.get(METADATA);
         for (int i = 0; i < array.size(); ++i) {
             ObjectNode o = (ObjectNode) array.get(i);
-            if (o.get(METADATA_NAME).equals(name)) {
+            if (o.get(METADATA_NAME).getTextValue().equals(name)) {
                 array.remove(i);
                 break;
             }
@@ -241,6 +246,11 @@ public class Event {
         if (n != null && n.isLong()) {
             node.put(INITIAL_SEQUENCE_NUMBER, n.getLongValue());
         }
+    }
+
+
+    public void setPhrases(ArrayNode aPhrases) {
+        node.put("phrases", aPhrases);
     }
 }
 
