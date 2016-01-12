@@ -48,8 +48,28 @@ public class SnapshotTree {
         update(event);
     }
 
-    private void reparent(Event event) {
+    private void reparent(Event event) throws IOException {
 
+        Event u = new Event();
+        String objectId = event.getObjectId();
+
+        if (store.find(objectId, u)) {
+            reparent(u, event);
+            store.update(event);
+        } else {
+            insert(event);
+        }
+    }
+
+    private void reparent(Event from, Event to) throws IOException {
+
+        String oldParentId = from.getParentId();
+        String newParentId = to.getParentId();
+
+        if (oldParentId.length() > 0 && newParentId.length() > 0 && !oldParentId.equals(newParentId)) {
+            parentRemove(oldParentId, to.getObjectId());
+            addChild(newParentId, to);
+        }
     }
 
     private void destroy(Event event) throws IOException {
@@ -74,9 +94,11 @@ public class SnapshotTree {
     }
 
     private void update(Event event) throws IOException {
-        Event u = new Event();
+        Event m, u = new Event();
         if (store.find(event.getObjectId(), u)) {
-            store.update(u);
+            reparent(u, event);
+            m = event.merge(u);
+            store.update(m);
         } else {
             store.insert(event);
         }

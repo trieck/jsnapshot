@@ -17,6 +17,7 @@ public class Event {
     private static final String METADATA_VALUE = "METADATA_VALUE";
     private static final String METADATA = "METADATA";
     private static final String TREE_CHILDREN = "TreeChildren";
+    private static final String INITIAL_SEQUENCE_NUMBER = "InitialSequenceNumber";
 
     private static final ObjectMapper mapper = new ObjectMapper();
     private ObjectNode node;
@@ -31,6 +32,11 @@ public class Event {
     public Event(String rep) throws IOException {
         node = (ObjectNode) mapper.readTree(rep);
         parseMeta();
+    }
+
+    public Event(Event event) throws IOException {
+        this.node = (ObjectNode) mapper.readTree(event.node.toString());
+        this.metadata = new HashMap<String, String>(event.metadata);
     }
 
     private void parseMeta() {
@@ -145,7 +151,7 @@ public class Event {
                 break;
             }
         }
-        
+
         return true;
     }
 
@@ -213,6 +219,28 @@ public class Event {
         node.removeAll();
         node.put(METADATA, mapper.createArrayNode());
         metadata.clear();
+    }
+
+    public Event merge(Event event) throws IOException {
+        Event m = new Event(this);
+
+        ArrayNode children = event.getChildren();
+        if (children != null && children.size() > 0) {
+            for (int i = 0; i < children.size(); ++i) {
+                m.addChild(children.get(i).getTextValue());
+            }
+        }
+
+        m.copyInitialSequenceNumber(event);
+
+        return m;
+    }
+
+    private void copyInitialSequenceNumber(Event event) {
+        JsonNode n = event.get(INITIAL_SEQUENCE_NUMBER);
+        if (n != null && n.isLong()) {
+            node.put(INITIAL_SEQUENCE_NUMBER, n.getLongValue());
+        }
     }
 }
 
