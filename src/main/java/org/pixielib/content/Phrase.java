@@ -1,8 +1,9 @@
 package org.pixielib.content;
 
 public class Phrase {
-    public PhraseStatus status;
-    public String text;
+    public final PhraseStatus status;
+    public final String text;
+
     public Phrase(String text, PhraseStatus status) {
         this.text = text;
         this.status = status;

@@ -10,7 +10,7 @@ import java.nio.ByteBuffer;
 
 public class EventBuffer {
 
-    private FlatBufferBuilder builder = new FlatBufferBuilder();
+    private final FlatBufferBuilder builder = new FlatBufferBuilder();
 
     public EventBuffer() {
     }

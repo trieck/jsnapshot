@@ -19,11 +19,6 @@ public class BlockIO {
         file = new RandomAccessFile(f, mode);
     }
 
-    public void open(String filename, String mode) throws IOException {
-        close();
-        file = new RandomAccessFile(filename, mode);
-    }
-
     public long tell() throws IOException {
         return file.getFilePointer();
     }

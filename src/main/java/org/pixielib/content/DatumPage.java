@@ -46,7 +46,7 @@ public class DatumPage extends Block {
         buffer.put(bytes, start, length);
     }
 
-    public void fill(byte datum, byte b, int length) {
+    public void fill(byte b, int length) {
         ByteBuffer buffer = getBuffer();
         while (length > 0) {
             buffer.put(b);

@@ -11,12 +11,12 @@ import java.util.Arrays;
 public class EventStore {
     private static final int DEFAULT_ENTRIES = 10000;
 
-    private BlockIO io;
-    private int tablesize;
-    private BucketPage page;
-    private RandomPerm perm;
-    private Repository repo;
+    private final BlockIO io;
+    private final BucketPage page;
+    private final RandomPerm perm;
+    private final Repository repo;
     private int fillcount;
+    private int tablesize;
 
     public EventStore() {
         io = new BlockIO();

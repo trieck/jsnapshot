@@ -11,7 +11,7 @@ import java.util.List;
 public class SnapshotParser {
 
     private static final ObjectMapper mapper = new ObjectMapper();
-    private List<Phrase> phrases;
+    private final List<Phrase> phrases;
 
     SnapshotParser() {
         phrases = new ArrayList<>();

@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class Repository {
-    private BlockIO io;
+    private final BlockIO io;
     private DatumPage page;
     private long dpageno;   // current data page while writing
     private byte ddatum;    // current datum on data page while writing
@@ -168,7 +168,7 @@ public class Repository {
             int written = nlength;
             nlength = Math.max(0, page.getLength(datum) - written);
             if (nlength > 0) {
-                page.fill(datum, (byte) 0, nlength);  // clear leftover
+                page.fill((byte) 0, nlength);  // clear leftover
             }
 
             page.setTotalLength(datum, totalLength);

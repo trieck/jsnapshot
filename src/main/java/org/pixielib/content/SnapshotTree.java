@@ -11,7 +11,7 @@ public class SnapshotTree {
     private static final String SNAP_EVENT =
             "Click|DoubleClick|GotFocus|LostFocus|SelectedIndexChanged|UserModified|CellValueChanged";
 
-    private static Comparator<EventBuffer> SEQUENCE_COMPARATOR = new Comparator<EventBuffer>() {
+    private static final Comparator<EventBuffer> SEQUENCE_COMPARATOR = new Comparator<EventBuffer>() {
         @Override
         public int compare(EventBuffer left, EventBuffer right) {
             long leftSeq = left.getEvent().initialSequence();
@@ -20,7 +20,7 @@ public class SnapshotTree {
         }
     };
 
-    private EventStore store;
+    private final EventStore store;
 
     public SnapshotTree() throws IOException {
         store = new EventStore();
@@ -136,7 +136,6 @@ public class SnapshotTree {
 
         Event e = new Event();
         if (store.find(event.getObjectId(), e)) {
-            String parentId = e.getParentId();
             parentRemove(e.getParentId(), e.getObjectId());
         }
         store.destroy(event);
