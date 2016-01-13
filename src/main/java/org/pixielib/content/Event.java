@@ -17,6 +17,7 @@ public class Event {
     private static final String METADATA_VALUE = "METADATA_VALUE";
     private static final String METADATA = "METADATA";
     private static final String TREE_CHILDREN = "TreeChildren";
+    private static final String EVENT_SEQUENCE_NUMBER = "EVENT_SEQUENCE_NUMBER";
     private static final String INITIAL_SEQUENCE_NUMBER = "InitialSequenceNumber";
 
     private static final ObjectMapper mapper = new ObjectMapper();
@@ -32,11 +33,19 @@ public class Event {
     public Event(String rep) throws IOException {
         node = (ObjectNode) mapper.readTree(rep);
         parseMeta();
+        setInitialSequenceNumber();
     }
 
     public Event(Event event) throws IOException {
         this.node = (ObjectNode) mapper.readTree(event.node.toString());
         this.metadata = new HashMap<>(event.metadata);
+        setInitialSequenceNumber();
+    }
+
+    private void setInitialSequenceNumber() {
+        if (node.get(INITIAL_SEQUENCE_NUMBER) == null && node.get(EVENT_SEQUENCE_NUMBER) != null) {
+            node.put(INITIAL_SEQUENCE_NUMBER, node.get(EVENT_SEQUENCE_NUMBER));
+        }
     }
 
     @Override
@@ -210,7 +219,7 @@ public class Event {
         }
 
         if (event.initialSequence() > 0) {
-            node.put("InitialSequenceNumber", event.initialSequence());
+            node.put(INITIAL_SEQUENCE_NUMBER, event.initialSequence());
         }
 
         length = event.metadataLength();
@@ -247,7 +256,6 @@ public class Event {
             node.put(INITIAL_SEQUENCE_NUMBER, n.getLongValue());
         }
     }
-
 
     public void setPhrases(ArrayNode aPhrases) {
         node.put("phrases", aPhrases);

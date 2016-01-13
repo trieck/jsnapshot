@@ -133,8 +133,13 @@ public class SnapshotTree {
     }
 
     private void destroy(Event event) throws IOException {
+
+        Event e = new Event();
+        if (store.find(event.getObjectId(), e)) {
+            String parentId = e.getParentId();
+            parentRemove(e.getParentId(), e.getObjectId());
+        }
         store.destroy(event);
-        parentRemove(event.getParentId(), event.getObjectId());
     }
 
     private void parentRemove(String parentId, String objectId) throws IOException {

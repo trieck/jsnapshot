@@ -48,12 +48,10 @@ public class EventStore {
     }
 
     private void writeBlock(long blockno) throws IOException {
-        page.rewind();
         io.writeBlock(blockno, page);
     }
 
     private void readBlock(long blockno) throws IOException {
-        page.rewind();
         io.readBlock(blockno, page);
     }
 
